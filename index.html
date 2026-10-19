@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Grand Seas — Open World</title>
+<style>
+:root{--gold:#ffd166;--panel:rgba(7,13,23,.88);--line:#ffffff38}
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#83d9e8;font-family:system-ui,-apple-system,sans-serif;color:#fff;touch-action:none}
+canvas{display:block;width:100%;height:100%;outline:none}
+#hud{position:fixed;inset:0;pointer-events:none}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:13px;box-shadow:0 8px 28px #00101b44;backdrop-filter:blur(8px)}
+#brand{position:absolute;left:14px;top:13px;padding:10px 14px;font-weight:900;letter-spacing:1.5px;color:var(--gold);text-shadow:0 2px #000;font-size:14px}
+#stats{position:absolute;left:14px;top:63px;width:210px;padding:10px 12px;font-size:12px}
+.bar{height:9px;border-radius:20px;background:#ffffff24;overflow:hidden;margin:4px 0 8px}.fill{height:100%;width:100%;transition:width .15s}
+#health{background:linear-gradient(90deg,#ff4858,#ff8a76)}#xp{background:linear-gradient(90deg,#28d6a2,#b0ff71)}
+#quest{position:absolute;top:14px;left:50%;transform:translateX(-50%);padding:10px 16px;text-align:center;min-width:200px;font-size:12px}
+#quest strong{color:var(--gold);font-size:13px}
+#actions{position:absolute;right:14px;top:14px;display:flex;gap:8px;pointer-events:auto}
+.ui-btn{background:var(--panel);border:1px solid var(--line);color:white;border-radius:10px;padding:10px 12px;font-weight:750}
+#hint{position:absolute;left:50%;bottom:105px;transform:translateX(-50%);background:#07101bcc;border:1px solid #ffffff36;border-radius:10px;padding:8px 12px;font-size:12px;text-align:center;white-space:nowrap}
+#hotbar{position:absolute;bottom:14px;left:50%;transform:translateX(-50%);display:flex;gap:6px;pointer-events:auto}
+.slot{width:58px;height:58px;background:#07101bd9;border:1px solid #ffffff4a;border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;font-size:23px}
+.slot.active{border:2px solid var(--gold);box-shadow:0 0 14px #ffd16666}.slot small{font-size:9px;opacity:.85}.key{position:absolute;top:3px;left:5px;font-size:9px;color:#ffd166}
+#mobile{position:absolute;inset:0;pointer-events:none;display:none}
+#stickBase{position:absolute;left:22px;bottom:30px;width:122px;height:122px;border-radius:50%;background:#06101b66;border:2px solid #ffffff35;pointer-events:auto}
+#stick{position:absolute;left:36px;top:36px;width:46px;height:46px;border-radius:50%;background:#e9f7ffbd;border:2px solid white;box-shadow:0 3px 12px #0006}
+#mobileBtns{position:absolute;right:18px;bottom:28px;display:grid;grid-template-columns:58px 58px;gap:9px;pointer-events:auto;align-items:end}
+.mbtn{width:58px;height:58px;border-radius:50%;border:2px solid #ffffff8c;background:#091522b8;color:white;font-weight:900;font-size:14px;box-shadow:0 4px 12px #0005;touch-action:none}
+.mbtn.big{width:68px;height:68px;background:#e3a82cbf;color:#10141b}
+#toast{position:absolute;left:50%;top:100px;transform:translateX(-50%);padding:10px 15px;border-radius:10px;background:#07101beF;border:1px solid #ffd16666;color:#fff;font-size:13px;display:none}
+#inventory{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(380px,92vw);padding:18px;display:none;pointer-events:auto}
+#inventory h2{margin:0 0 8px;color:var(--gold)}#items{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0}
+.item{padding:12px 6px;text-align:center;border:1px solid var(--line);border-radius:9px;background:#ffffff0b;font-size:12px}
+#inventory p{font-size:12px;opacity:.8}
+#start{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:linear-gradient(#0b1a28b8,#07121de8);z-index:10;padding:20px}
+#startCard{width:min(480px,100%);padding:26px;text-align:center}
+#startCard h1{font-size:clamp(27px,6vw,44px);margin:4px 0;color:var(--gold);letter-spacing:2px}
+#startCard p{line-height:1.55;color:#dbeaf4;font-size:14px}
+#startCard button{padding:14px 22px;background:var(--gold);color:#15202b;border:0;border-radius:10px;font-size:16px;font-weight:900;margin-top:8px}
+@media(max-width:1100px), (pointer: coarse){#mobile{display:block}#quest{top:13px;left:auto;right:12px;transform:none;min-width:0;padding:8px 10px;max-width:44%;font-size:10px}#quest strong{font-size:11px}#stats{top:64px;width:160px;font-size:10px}#brand{font-size:12px}#hint{bottom:166px;font-size:10px;max-width:90%;white-space:normal}#hotbar{bottom:8px;gap:4px}.slot{width:47px;height:49px;font-size:19px}#actions{top:auto;right:10px;bottom:88px}#actions .ui-btn{padding:8px;font-size:11px}}
+</style>
+</head>
+<body>
+<canvas id="game"></canvas>
+<div id="hud">
+ <div id="brand" class="panel">☠ GRAND SEAS <span style="color:#fff;font-size:9px">OPEN WORLD</span></div>
+ <div id="stats" class="panel">
+  <div style="display:flex;justify-content:space-between"><b>LV. <span id="level">1</span></b><span id="money">฿ 0</span></div>
+  <div>VIDA <span id="hpText">100/100</span></div><div class="bar"><div class="fill" id="health"></div></div>
+  <div>EXPERIÊNCIA <span id="xpText">0/50</span></div><div class="bar"><div class="fill" id="xp"></div></div>
+ </div>
+ <div id="quest" class="panel"><strong>MISSÃO: PRIMEIROS PASSOS</strong><br><span id="questText">Derrote 3 bandidos da selva (0/3)</span></div>
+ <div id="actions"><button class="ui-btn" id="invBtn">🎒 Bolsa</button><button class="ui-btn" id="boatBtn">⛵ Barcos</button></div>
+ <div id="hint">WASD mover · Mouse olhar · Clique atacar · E interagir · 1–5 hotbar</div>
+ <div id="hotbar"></div>
+ <div id="toast"></div>
+ <div id="inventory" class="panel"><h2>🎒 Inventário</h2><div id="items"></div><p>Selecione um item na hotbar. Equipamentos aparecem na mão do personagem.</p><button class="ui-btn" id="closeInv">Fechar</button></div>
+ <div id="mobile"><div id="stickBase"><div id="stick"></div></div><div id="mobileBtns"><button class="mbtn" id="jumpBtn">PULAR</button><button class="mbtn big" id="attackBtn">ATACAR</button><button class="mbtn" id="interactBtn">PEGAR</button><button class="mbtn" id="dashBtn">DASH</button></div></div>
+</div>
+<div id="start"><div id="startCard" class="panel">
+ <div style="font-size:42px">🏴‍☠️</div><h1>GRAND SEAS</h1><div style="color:#9fd7e8;font-weight:800;letter-spacing:3px">A JORNADA COMEÇA</div>
+ <p>Um mundo 3D aberto de aventura pirata. Comece apenas com os punhos, derrote bandidos, ganhe Berries, encontre baús e compre seu primeiro barco.</p>
+ <p><b>PC:</b> WASD + mouse · clique para atacar · E para interagir<br><b>iPad/celular:</b> joystick na tela + botões de ação</p>
+ <button id="startBtn">ENTRAR NO MUNDO</button>
+ </div></div>
+<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+<script>
+(() => {
+const canvas=document.getElementById('game');
+const renderer=new THREE.WebGLRenderer({canvas,antialias:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.setSize(innerWidth,innerHeight);
+renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+renderer.outputColorSpace=THREE.SRGBColorSpace;
+const scene=new THREE.Scene();scene.background=new THREE.Color(0x8bdde9);scene.fog=new THREE.Fog(0x8bdde9,70,220);
+const camera=new THREE.PerspectiveCamera(65,innerWidth/innerHeight,.1,500);
+scene.add(new THREE.HemisphereLight(0xc8f3ff,0x48633c,2.1));
+const sun=new THREE.DirectionalLight(0xfff0cf,2.5);sun.position.set(-35,65,25);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);sun.shadow.camera.left=-90;sun.shadow.camera.right=90;sun.shadow.camera.top=90;sun.shadow.camera.bottom=-90;scene.add(sun);
+const mat=(c,rough=.9)=>new THREE.MeshStandardMaterial({color:c,roughness:rough});
+const M={grass:mat(0x56a94b),sand:mat(0xe9d08a),water:mat(0x239ec5,.45),wood:mat(0x80502d),wood2:mat(0xb77a42),leaf:mat(0x2d853d),leaf2:mat(0x58b747),stone:mat(0x707c80),skin:mat(0xf0bd8a),shirt:mat(0x2d5fc0),pants:mat(0x25354c),black:mat(0x19212a),white:mat(0xf3eee0),red:mat(0xc83d3d),gold:mat(0xffc642),enemy:mat(0x9c4637),eye:mat(0x141923),blade:mat(0xbfcbd6,.35)};
+function box(parent,x,y,z,sx,sy,sz,material){let o=new THREE.Mesh(new THREE.BoxGeometry(sx,sy,sz),material);o.position.set(x,y,z);o.castShadow=true;o.receiveShadow=true;parent.add(o);return o}
+function sphere(parent,x,y,z,r,material,scale){let o=new THREE.Mesh(new THREE.SphereGeometry(r,12,10),material);o.position.set(x,y,z);if(scale)o.scale.set(...scale);o.castShadow=true;parent.add(o);return o}
+function cylinder(parent,x,y,z,rt,rb,h,material,seg=10){let o=new THREE.Mesh(new THREE.CylinderGeometry(rt,rb,h,seg),material);o.position.set(x,y,z);o.castShadow=true;parent.add(o);return o}
+const water=new THREE.Mesh(new THREE.PlaneGeometry(500,500,40,40),M.water);water.rotation.x=-Math.PI/2;water.position.y=-.35;scene.add(water);
+// island layered discs
+const island=new THREE.Group();scene.add(island);
+let base=new THREE.Mesh(new THREE.CylinderGeometry(39,43,3,64),M.sand);base.position.y=-.5;base.receiveShadow=true;island.add(base);
+let turf=new THREE.Mesh(new THREE.CylinderGeometry(35,38,2.5,64),M.grass);turf.position.y=.75;turf.receiveShadow=true;island.add(turf);
+const ground=new THREE.Mesh(new THREE.CircleGeometry(35,64),M.grass);ground.rotation.x=-Math.PI/2;ground.position.y=2.01;ground.receiveShadow=true;island.add(ground);
+// beach strips around island
+for(let i=0;i<34;i++){let a=i/34*Math.PI*2;let r=36;let palmX=Math.cos(a)*r,palmZ=Math.sin(a)*r;if(i%2===0)continue;}
+// palm trees
+const trees=[];
+function palm(x,z,s=1){let g=new THREE.Group();g.position.set(x,2,z);g.scale.setScalar(s);scene.add(g);cylinder(g,0,2.2,0,.24,.38,4.4,M.wood);for(let i=0;i<7;i++){let a=i/7*Math.PI*2;let leaf=box(g,Math.cos(a)*1.5,4.25,Math.sin(a)*1.5,3.4,.15,.65,i%2?M.leaf:M.leaf2);leaf.rotation.y=-a;leaf.rotation.z=-.24;}sphere(g,0,4.35,0,.42,M.leaf2);trees.push(g);}
+[[ -25,-12,1.2],[-29,7,1],[-20,24,.9],[25,20,1.1],[28,1,1.2],[20,-25,1],[-8,29,.8],[9,28,.9],[-30,-4,.8],[30,-13,.9]].forEach(v=>palm(...v));
+// village huts, docks, market
+function hut(x,z,s=1){let g=new THREE.Group();g.position.set(x,2,z);scene.add(g);box(g,0,1.1,0,4*s,2.2*s,3.4*s,M.wood2);let roof=new THREE.Mesh(new THREE.ConeGeometry(3.2*s,1.8*s,4),M.wood);roof.position.y=2.9*s;roof.rotation.y=Math.PI/4;roof.castShadow=true;g.add(roof);box(g,0,.7,1.72*s,.9*s,1.4*s,.08,M.black);box(g,-1.25*s,1.35*s,1.75*s,.7*s,.6*s,.08,M.gold);return g}
+hut(-10,-13,1);hut(-15,-7,.8);hut(12,-12,.9);
+for(let i=0;i<6;i++){box(scene,-2,1.9,-22-i*1.8,4,.35,.6,M.wood2);}
+// dock extends to sea
+for(let i=0;i<9;i++)box(scene,4,1.4,-27-i*1.5,4,.35,1.35,M.wood2);
+for(let x of [2.3,5.7])for(let i=0;i<9;i++)cylinder(scene,x,.55,-27-i*1.5,.18,.18,1.8,M.wood);
+// sign
+const sign=new THREE.Group();sign.position.set(-5,2,-17);scene.add(sign);cylinder(sign,0,1,0,.13,.13,2,M.wood);box(sign,0,2,0,3,1.05,.2,M.wood2);
+// rocks and flowers
+for(let i=0;i<38;i++){let a=Math.random()*6.28,r=14+Math.random()*19,x=Math.cos(a)*r,z=Math.sin(a)*r;if(z<-24&&x<10)continue;let rock=sphere(scene,x,2.1,z,.6+Math.random()*.7,M.stone,[1.2,.65,.9]);}
+for(let i=0;i<55;i++){let a=Math.random()*6.28,r=8+Math.random()*25,x=Math.cos(a)*r,z=Math.sin(a)*r; if(z<-25&&x<10)continue;let f=cylinder(scene,x,2.08,z,.05,.05,.28,i%2?M.gold:M.red,6);sphere(scene,x,2.27,z,.12,i%2?M.red:M.gold);}
+ // clouds
+for(let i=0;i<12;i++){let g=new THREE.Group();g.position.set((Math.random()-.5)*180,30+Math.random()*12,(Math.random()-.5)*150);scene.add(g);for(let j=0;j<4;j++)sphere(g,j*2,Math.random(),0,2.5,M.white,[1.3,.65,.8]);}
+// far islands
+function farIsland(x,z,s,color=0x41914b){let g=new THREE.Group();g.position.set(x,0,z);g.scale.setScalar(s);scene.add(g);let b=new THREE.Mesh(new THREE.CylinderGeometry(14,18,3,32),M.sand);b.position.y=-.4;g.add(b);let t=new THREE.Mesh(new THREE.CylinderGeometry(12,14,2,32),mat(color));t.position.y=1;g.add(t);for(let i=0;i<5;i++)palm(x+(Math.random()-.5)*17*s,z+(Math.random()-.5)*17*s,.7*s);}
+farIsland(-95,-65,1.5,0x498a47);farIsland(105,-110,2,0x3f8753);farIsland(105,70,1.3,0x4c9845);
+// player model
+const player=new THREE.Group();scene.add(player);
+const body=new THREE.Group();player.add(body);
+const torso=box(body,0,1.45,0,.82,1.02,.43,M.shirt);
+const head=sphere(body,0,2.25,0,.38,M.skin,[.86,1,.82]);
+sphere(body,0,2.48,-.015,.4,M.black,[1,.45,.92]); // hair
+box(body,0,2.22,-.34,.48,.11,.06,M.black);
+for(let x of [-.13,.13])sphere(body,x,2.28,.31,.045,M.eye);
+const armL=new THREE.Group();armL.position.set(-.52,1.82,0);body.add(armL);box(armL,0,-.34,0,.25,.72,.27,M.skin);
+const armR=new THREE.Group();armR.position.set(.52,1.82,0);body.add(armR);box(armR,0,-.34,0,.25,.72,.27,M.skin);
+const legL=new THREE.Group();legL.position.set(-.23,.93,0);body.add(legL);box(legL,0,-.4,0,.3,.82,.34,M.pants);box(legL,0,-.83,.08,.35,.18,.5,M.black);
+const legR=new THREE.Group();legR.position.set(.23,.93,0);body.add(legR);box(legR,0,-.4,0,.3,.82,.34,M.pants);box(legR,0,-.83,.08,.35,.18,.5,M.black);
+const sword=new THREE.Group();sword.position.set(.7,1.1,.1);body.add(sword);box(sword,0,.35,0,.09,.78,.1,M.blade);box(sword,0,-.08,0,.35,.09,.15,M.gold);box(sword,0,-.24,0,.13,.27,.13,M.wood);sword.visible=false;
+const fistGlow=new THREE.PointLight(0xffbd63,0,3);fistGlow.position.set(.7,1.4,.5);body.add(fistGlow);
+player.position.set(0,2,4);
+// NPCs
+const enemies=[],drops=[],chests=[];
+function makeEnemy(x,z,type='bandit',boss=false){let g=new THREE.Group();g.position.set(x,2,z);scene.add(g);let clothes=boss?mat(0x7e1d35):M.enemy;box(g,0,1.4,0,.78,1,.4,clothes);sphere(g,0,2.18,0,.35,M.skin);sphere(g,0,2.4,-.01,.37,M.black,[1,.38,1]);for(let dx of [-.12,.12])sphere(g,dx,2.18,.31,.04,M.eye);for(let dx of [-.48,.48]){let a=box(g,dx,1.48,0,.22,.7,.25,M.skin);a.rotation.z=dx<0?-.1:.1}box(g,-.2,.6,0,.27,.8,.3,M.black);box(g,.2,.6,0,.27,.8,.3,M.black);let hpmax=boss?180:45;let barBack=box(g,0,2.85,0,1.25,.12,.08,M.black);let bar=box(g,0,2.86,.05,1.15,.07,.04,mat(0xff394d));enemies.push({g,hp:hpmax,max:hpmax,bar,barBack,boss,alive:true,home:new THREE.Vector3(x,2,z),attack:0,hit:0,name:boss?'Bandido Chefe':'Bandido da Selva',speed:boss?2.1:1.55});return g}
+for(let p of [[-17,4],[-12,12],[9,10],[18,7],[14,-1],[-4,17],[23,11]])makeEnemy(p[0],p[1]);
+makeEnemy(23,-8,'boss',true);
+// chests
+function chest(x,z,rare=false){let g=new THREE.Group();g.position.set(x,2,z);scene.add(g);box(g,0,.35,0,1.2,.7,.8,M.wood);box(g,0,.77,0,1.25,.16,.84,M.gold);box(g,0,.78,.44,.18,.22,.05,M.black);let glow=sphere(g,0,1.25,0,.18,rare?M.gold:M.white);chests.push({g,opened:false,rare,glow});}
+chest(-22,-4);chest(7,19);chest(27,-17,true);
+// boat at dock
+const boat=new THREE.Group();scene.add(boat);boat.position.set(4,0,-40);
+let hull=new THREE.Mesh(new THREE.CylinderGeometry(1.25,1.65,5.6,6,1,false),M.wood);hull.rotation.z=Math.PI/2;hull.scale.set(1,.45,1.15);hull.position.y=.75;boat.add(hull);
+box(boat,0,1.15,0,4.5,.25,2.1,M.wood2);cylinder(boat,0,3,0,.12,.12,4,M.wood);let sail=new THREE.Mesh(new THREE.PlaneGeometry(2.5,2.8),mat(0xf6eee0));sail.position.set(0,3.2,.08);boat.add(sail);boat.visible=false;
+const keys={};let yaw=0,pitch=.18,started=false,inventoryOpen=false,attackCooldown=0,playerHP=100,maxHP=100,xp=0,level=1,money=0,kills=0,selected=0,boatOwned=false,onBoat=false,velY=0,grounded=true;
+const inventory=[{name:'Punhos',icon:'👊',type:'fists'},{name:'',icon:'',type:''},{name:'',icon:'',type:''},{name:'',icon:'',type:''},{name:'',icon:'',type:''}];
+function notify(t){let el=document.getElementById('toast');el.textContent=t;el.style.display='block';clearTimeout(notify.timer);notify.timer=setTimeout(()=>el.style.display='none',2300)}
+function updateHotbar(){let h=document.getElementById('hotbar');h.innerHTML='';inventory.forEach((it,i)=>{let d=document.createElement('div');d.className='slot'+(i===selected?' active':'');d.innerHTML=`<span class="key">${i+1}</span>${it.icon||'—'}<small>${it.name||'Vazio'}</small>`;d.onclick=()=>selectSlot(i);h.appendChild(d)})}
+function selectSlot(i){selected=i;let it=inventory[i];sword.visible=it.type==='sword';updateHotbar();if(it.type==='sword')notify('Espada equipada');else if(it.type==='fists')notify('Punhos equipados')}
+function updateInventory(){let el=document.getElementById('items');el.innerHTML='';inventory.forEach((it,i)=>{let d=document.createElement('div');d.className='item';d.innerHTML=`<div style="font-size:25px">${it.icon||'—'}</div><b>${it.name||'Vazio'}</b><br><small>Slot ${i+1}</small><br><button class="ui-btn" style="margin-top:6px;padding:5px" ${it.name?'':'disabled'}>Equipar</button>`;d.querySelector('button').onclick=()=>selectSlot(i);el.appendChild(d)});let berries=document.createElement('div');berries.className='item';berries.innerHTML=`🪙<br><b>${money} Berries</b><br><small>Moeda</small>`;el.appendChild(berries)}
+function toggleInv(){inventoryOpen=!inventoryOpen;document.getElementById('inventory').style.display=inventoryOpen?'block':'none';if(inventoryOpen)updateInventory()}
+document.getElementById('invBtn').onclick=toggleInv;document.getElementById('closeInv').onclick=toggleInv;
+document.getElementById('boatBtn').onclick=()=>{if(!boatOwned){if(money>=250){money-=250;boatOwned=true;boat.visible=true;notify('Barco comprado! Vá até o cais e pressione E.')}else notify('Barco simples custa 250 Berries. Derrote inimigos e abra baús!')}else if(!onBoat){notify('Chegue perto do barco e pressione E para embarcar.')}else notify('Você já está navegando!');updateUI()};
+function updateUI(){document.getElementById('level').textContent=level;document.getElementById('money').textContent='฿ '+money;document.getElementById('hpText').textContent=Math.max(0,Math.ceil(playerHP))+'/'+maxHP;document.getElementById('health').style.width=(playerHP/maxHP*100)+'%';document.getElementById('xpText').textContent=xp+'/'+(level*50);document.getElementById('xp').style.width=(xp/(level*50)*100)+'%';document.getElementById('questText').textContent=`Derrote 3 bandidos da selva (${Math.min(kills,3)}/3)`;updateHotbar()}
+function gainXP(n){xp+=n;while(xp>=level*50){xp-=level*50;level++;maxHP+=12;playerHP=maxHP;notify('SUBIU DE NÍVEL! Agora você é nível '+level)}}
+function dropItem(x,z,icon,name,type){let g=new THREE.Group();g.position.set(x,2.25,z);scene.add(g);let orb=sphere(g,0,.25,0,.28,type==='sword'?M.blade:M.gold);let ring=new THREE.Mesh(new THREE.TorusGeometry(.4,.05,6,14),M.gold);ring.rotation.x=Math.PI/2;ring.position.y=.1;g.add(ring);drops.push({g,icon,name,type,baseY:2.25,phase:Math.random()*6.28});}
+function attack(){if(!started||inventoryOpen||attackCooldown>0)return;attackCooldown=.48;armR.rotation.x=-1.15;setTimeout(()=>armR.rotation.x=0,140);const dir=new THREE.Vector3(Math.sin(yaw),0,Math.cos(yaw));let hit=false;for(let e of enemies){if(!e.alive)continue;let dx=e.g.position.x-player.position.x,dz=e.g.position.z-player.position.z;let dist=Math.hypot(dx,dz);let facing=(dx*dir.x+dz*dir.z)/(dist||1);if(dist<4.1&&facing>.15){let dmg=inventory[selected].type==='sword'?25:12;e.hp-=dmg;e.hit=.2;e.g.position.x+=dir.x*.7;e.g.position.z+=dir.z*.7;e.bar.scale.x=Math.max(.01,e.hp/e.max);e.bar.position.x=-(1.15*(1-e.hp/e.max))/2;hit=true;fistGlow.intensity=.9;setTimeout(()=>fistGlow.intensity=0,100);if(e.hp<=0){e.alive=false;scene.remove(e.g);kills++;money+=e.boss?100:25;gainXP(e.boss?80:18);notify((e.boss?'CHEFE DERROTADO! ':'Bandido derrotado! ')+(e.boss?100:25)+' Berries');if(Math.random()<.32)dropItem(e.g.position.x,e.g.position.z,'🪙','Bolsa de Berries','money');if(Math.random()<.12)dropItem(e.g.position.x,e.g.position.z,'🗡️','Espada enferrujada','sword');updateUI()}break}}if(!hit)notify('O golpe cortou o ar! Aproxime-se do inimigo.')}
+function interact(){if(!started)return;let near=Infinity,target=null,type='';for(let c of chests){if(c.opened)continue;let d=player.position.distanceTo(c.g.position);if(d<near){near=d;target=c;type='chest'}}for(let d of drops){let dist=player.position.distanceTo(d.g.position);if(dist<near){near=dist;target=d;type='drop'}}let bd=player.position.distanceTo(boat.position);if(boatOwned&&bd<5&&bd<near){near=bd;target=boat;type='boat'}if(type==='chest'&&near<4){target.opened=true;target.g.visible=false;let reward=target.rare?150:55;money+=reward;gainXP(target.rare?35:12);notify('Baú aberto! +'+reward+' Berries'+(target.rare?' · BAÚ RARO!':''));if(Math.random()<.45){let slot=inventory.findIndex((it,i)=>i>0&&!it.name);if(slot>0){inventory[slot]={name:'Espada enferrujada',icon:'🗡️',type:'sword'};notify('Você encontrou uma espada! Slot '+(slot+1))}}updateUI();return}if(type==='drop'&&near<4){if(target.type==='money')money+=35;else {let slot=inventory.findIndex((it,i)=>i>0&&!it.name);if(slot>0){inventory[slot]={name:target.name,icon:target.icon,type:target.type};notify(target.name+' coletada!')}else notify('Inventário cheio!')}scene.remove(target.g);drops.splice(drops.indexOf(target),1);updateUI();return}if(type==='boat'&&near<5){onBoat=!onBoat;boat.visible=true;notify(onBoat?'Você embarcou! Use WASD para navegar.':'Você desembarcou.');return}notify('Nada por perto. Procure baús, itens ou o barco no cais.')}
+function jump(){if(grounded){velY=7.2;grounded=false}}
+window.addEventListener('keydown',e=>{keys[e.key.toLowerCase()]=true;if([' ','arrowup','arrowdown'].includes(e.key.toLowerCase()))e.preventDefault();if(e.key.toLowerCase()==='e')interact();if(e.key.toLowerCase()===' '||e.key.toLowerCase()==='space')jump();if(e.key.toLowerCase()==='i')toggleInv();if(e.key>='1'&&e.key<='5')selectSlot(+e.key-1);if(e.key.toLowerCase()==='f')attack()});
+window.addEventListener('keyup',e=>keys[e.key.toLowerCase()]=false);
+let mouseDown=false,lastX=0,lastY=0;
+canvas.addEventListener('click',()=>{if(started&&document.pointerLockElement!==canvas&&innerWidth>700)canvas.requestPointerLock?.();else attack()});
+document.addEventListener('pointerlockchange',()=>{});
+document.addEventListener('mousemove',e=>{if(document.pointerLockElement===canvas){yaw-=e.movementX*.0035;pitch=Math.max(-.15,Math.min(.65,pitch+e.movementY*.002))}});
+canvas.addEventListener('contextmenu',e=>e.preventDefault());
+let touchLook=false,touchX=0,touchY=0;
+canvas.addEventListener('touchstart',e=>{if(e.touches.length===1&&e.touches[0].clientX>innerWidth*.42){touchLook=true;touchX=e.touches[0].clientX;touchY=e.touches[0].clientY}}, {passive:false});
+canvas.addEventListener('touchmove',e=>{if(touchLook){let t=e.touches[0];yaw-=(t.clientX-touchX)*.008;pitch=Math.max(-.1,Math.min(.6,pitch+(t.clientY-touchY)*.003));touchX=t.clientX;touchY=t.clientY}}, {passive:false});
+canvas.addEventListener('touchend',()=>touchLook=false);
+canvas.addEventListener('mousedown',e=>{if(e.button===0&&started&&innerWidth>700){attack()}});
+document.getElementById('startBtn').onclick=()=>{document.getElementById('start').style.display='none';started=true;notify('Bem-vindo à Ilha da Selva!');};
+document.getElementById('attackBtn').addEventListener('pointerdown',e=>{e.preventDefault();attack()});
+document.getElementById('interactBtn').addEventListener('pointerdown',e=>{e.preventDefault();interact()});
+document.getElementById('jumpBtn').addEventListener('pointerdown',e=>{e.preventDefault();jump()});
+document.getElementById('dashBtn').addEventListener('pointerdown',e=>{e.preventDefault();player.position.x+=Math.sin(yaw)*3;player.position.z+=Math.cos(yaw)*3});
+const baseEl=document.getElementById('stickBase'),stickEl=document.getElementById('stick');let stickId=null,stickVec={x:0,y:0};
+baseEl.addEventListener('pointerdown',e=>{stickId=e.pointerId;baseEl.setPointerCapture(stickId);moveStick(e)});
+baseEl.addEventListener('pointermove',e=>{if(e.pointerId===stickId)moveStick(e)});
+function moveStick(e){let r=baseEl.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2,dx=e.clientX-cx,dy=e.clientY-cy,l=Math.hypot(dx,dy),max=42;if(l>max){dx=dx/l*max;dy=dy/l*max}stickVec={x:dx/max,y:dy/max};stickEl.style.transform=`translate(${dx}px,${dy}px)`}
+function endStick(e){if(e.pointerId===stickId){stickId=null;stickVec={x:0,y:0};stickEl.style.transform='translate(0,0)'}}
+baseEl.addEventListener('pointerup',endStick);baseEl.addEventListener('pointercancel',endStick);
+const clock=new THREE.Clock();
+function animate(){requestAnimationFrame(animate);let dt=Math.min(clock.getDelta(),.04);if(attackCooldown>0)attackCooldown-=dt;
+water.position.y=-.35+Math.sin(performance.now()*.0007)*.06;
+if(started&&!inventoryOpen){let forward=(keys.w||keys.arrowup?1:0)-(keys.s||keys.arrowdown?1:0)-stickVec.y;let side=(keys.d||keys.arrowright?1:0)-(keys.a||keys.arrowleft?1:0)+stickVec.x;let len=Math.hypot(forward,side);if(len>1){forward/=len;side/=len}let speed=onBoat?12:7;let dx=(Math.sin(yaw)*forward+Math.cos(yaw)*side)*speed*dt;let dz=(Math.cos(yaw)*forward-Math.sin(yaw)*side)*speed*dt;if(!onBoat){player.position.x+=dx;player.position.z+=dz;player.position.x=Math.max(-34,Math.min(34,player.position.x));player.position.z=Math.max(-34,Math.min(34,player.position.z));}else{boat.position.x+=dx;boat.position.z+=dz;player.position.x=boat.position.x;player.position.z=boat.position.z;player.position.y=1.5;}
+if(len>.1){body.rotation.y=Math.atan2(side,forward)*.35;legL.rotation.x=Math.sin(performance.now()*.012)*.55*len;legR.rotation.x=-Math.sin(performance.now()*.012)*.55*len;armL.rotation.x=-Math.sin(performance.now()*.012)*.35*len;}else{legL.rotation.x*=.8;legR.rotation.x*=.8;armL.rotation.x*=.8}
+if(!onBoat){player.position.y+=velY*dt;velY-=19*dt;if(player.position.y<=2){player.position.y=2;velY=0;grounded=true}}
+if(keys.f)attackCooldown=Math.max(attackCooldown,0);
+for(let e of enemies){if(!e.alive)continue;let dx=player.position.x-e.g.position.x,dz=player.position.z-e.g.position.z,d=Math.hypot(dx,dz);if(d<14&&d>1.6){e.g.position.x+=dx/d*e.speed*dt;e.g.position.z+=dz/d*e.speed*dt;e.g.rotation.y=Math.atan2(dx,dz)}if(d<2.2){e.attack-=dt;if(e.attack<=0){e.attack=1.35;playerHP-=e.boss?12:6;notify('Você foi atingido!');if(playerHP<=0){playerHP=maxHP;player.position.set(0,2,4);money=Math.max(0,money-20);notify('Você desmaiou e perdeu 20 Berries.')}updateUI()}}}
+for(let d of drops){d.g.position.y=d.baseY+Math.sin(performance.now()*.003+d.phase)*.18;d.g.rotation.y+=dt}
+for(let c of chests)if(!c.opened)c.glow.material=M.gold;
+}
+// camera third person
+let target=new THREE.Vector3(player.position.x,player.position.y+1.4,player.position.z);let distance=10;
+let cx=player.position.x-Math.sin(yaw)*distance,cz=player.position.z-Math.cos(yaw)*distance,cy=player.position.y+4.2+pitch*7;
+camera.position.lerp(new THREE.Vector3(cx,cy,cz),.12);camera.lookAt(target);
+renderer.render(scene,camera)}
+animate();
+window.addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);renderer.setPixelRatio(Math.min(devicePixelRatio,2))});
+updateUI();
+})();
+</script>
+</body>
+</html>
